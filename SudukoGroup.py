@@ -268,6 +268,93 @@ return True, ""
                     # unique combo (pair or triple) found
                     uniques.append((list(group_inds), combo))
         return uniques
-def pointing_combos(self, inds_box): # See documentation https://www.sudokuwiki.org/Intersection_Removal # inds_box should come from self.get_inds_box() groups = self.count_candidates(inds_box) pointers = [] for num, indices in enumerate(groups): # need a pair or triple if len(indices) == 2 or len(indices) == 3: row_same, col_same = True, True i0, j0 = indices[0] for i, j in indices[1:]: row_same = row_same and (i == i0) col_same = col_same and (j == j0) if row_same: line = [(i0, j) for j in range(self.n)] pointers.append((line, indices, [num])) if col_same: line = [(i, j0) for i in range(self.n)] pointers.append((line, indices, [num])) return pointers def box_line_reduction(self, inds_box): # See documentation https://www.sudokuwiki.org/Intersection_Removal # inds_box should come from self.get_inds_box() keeps = [] i0, j0 = inds_box[0] i1, j1 = min(i0 + BOX_SIZE, self.n - 1), min(j0 + BOX_SIZE, self.n - 1) # check rows for i in range(i0, i1 + 1): row = self.get_candidates((i, j0), (i, j1)) line = self.get_candidates( (i, 0), (i, j0 - 1)) | self.get_candidates((i, j1 + 1), (i, self.n - 1)) uniques = row.difference(line) if uniques: keeps.append( ([(i, j) for j in range(j0, j1 + 1)], list(uniques))) # check columns for j in range(j0, j1 + 1): col = self.get_candidates((i0, j), (i1, j)) line = self.get_candidates( (0, j), (i0 - 1, j)) | self.get_candidates((i1 + 1, j), (self.n - 1, j)) uniques = col.difference(line) if uniques: keeps.append( ([(i, j) for i in range(i0, i1 + 1)], list(uniques))) return keeps def get_all_units(self): # get indices for each set inds_set = [] for i in range(self.n): inds = [(i, j) for j in range(self.n)] inds_set.append(inds) # check in column for j in range(self.n):
-inds = [(i, j) for i in range(self.n)] inds_set.append(inds) return inds_set def get_all_boxes(self): inds_box = [] for i0 in range(0, self.n, BOX_SIZE): for j0 in range(0, self.n, BOX_SIZE): inds = self.get_box_inds(i0, j0) inds_box.append(inds) return inds_box def flush_candidates(self) -> None: """set candidates across the whole grid, according to logical strategies""" # get indices for each set inds_box = self.get_all_boxes() inds_set = self.get_all_units() inds_set.extend(inds_box) for _ in range(1): # repeat this process in case changes are made # apply strategies for inds in inds_set: # hidden/naked singles/pairs/triples uniques = self.get_unique(inds, type=[1, 2]) for inds_combo, combo in uniques: self.erase(combo, inds, inds_combo) self.set_candidates(combo, inds_combo) for inds in inds_box: # pointing pairs pointers = self.pointing_combos(inds) for line, inds_pointer, num in pointers: self.erase(num, line, inds_pointer) # box-line reduction # keeps = self.box_line_reduction(inds) # for inds_keep, nums in keeps: # self.erase(nums, inds, inds_keep)
-			
+def pointing_combos(self, inds_box):
+        # See documentation https://www.sudokuwiki.org/Intersection_Removal
+        # inds_box should come from self.get_inds_box()
+        groups = self.count_candidates(inds_box)
+        pointers = []
+        for num, indices in enumerate(groups):
+            # need a pair or triple
+            if len(indices) == 2 or len(indices) == 3:
+                row_same, col_same = True, True
+                i0, j0 = indices[0]
+                for i, j in indices[1:]:
+                    row_same = row_same and (i == i0)
+                    col_same = col_same and (j == j0)
+                if row_same:
+                    line = [(i0, j) for j in range(self.n)]
+                    pointers.append((line, indices, [num]))
+                if col_same:
+                    line = [(i, j0) for i in range(self.n)]
+                    pointers.append((line, indices, [num]))
+        return pointers
+
+    def box_line_reduction(self, inds_box):
+        # See documentation https://www.sudokuwiki.org/Intersection_Removal
+        # inds_box should come from self.get_inds_box()
+        keeps = []
+        i0, j0 = inds_box[0]
+        i1, j1 = min(i0 + BOX_SIZE, self.n - 1), min(j0 + BOX_SIZE, self.n - 1)
+        # check rows
+        for i in range(i0, i1 + 1):
+            row = self.get_candidates((i, j0), (i, j1))
+            line = self.get_candidates(
+                (i, 0), (i, j0 - 1)) | self.get_candidates((i, j1 + 1), (i, self.n - 1))
+            uniques = row.difference(line)
+            if uniques:
+                keeps.append(
+                    ([(i, j) for j in range(j0, j1 + 1)], list(uniques)))
+        # check columns
+        for j in range(j0, j1 + 1):
+            col = self.get_candidates((i0, j), (i1, j))
+            line = self.get_candidates(
+                (0, j), (i0 - 1, j)) | self.get_candidates((i1 + 1, j), (self.n - 1, j))
+            uniques = col.difference(line)
+            if uniques:
+                keeps.append(
+                    ([(i, j) for i in range(i0, i1 + 1)], list(uniques)))
+        return keeps
+
+    def get_all_units(self):
+        # get indices for each set
+        inds_set = []
+        for i in range(self.n):
+            inds = [(i, j) for j in range(self.n)]
+            inds_set.append(inds)
+        # check in column
+        for j in range(self.n):
+            inds = [(i, j) for i in range(self.n)]
+            inds_set.append(inds)
+        return inds_set
+
+    def get_all_boxes(self):
+        inds_box = []
+        for i0 in range(0, self.n, BOX_SIZE):
+            for j0 in range(0, self.n, BOX_SIZE):
+                inds = self.get_box_inds(i0, j0)
+                inds_box.append(inds)
+        return inds_box
+
+    def flush_candidates(self) -> None:
+        """set candidates across the whole grid, according to logical strategies"""
+        # get indices for each set
+        inds_box = self.get_all_boxes()
+        inds_set = self.get_all_units()
+        inds_set.extend(inds_box)
+        for _ in range(1):  # repeat this process in case changes are made
+            # apply strategies
+            for inds in inds_set:
+                # hidden/naked singles/pairs/triples
+                uniques = self.get_unique(inds, type=[1, 2])
+                for inds_combo, combo in uniques:
+                    self.erase(combo, inds, inds_combo)
+                    self.set_candidates(combo, inds_combo)
+            for inds in inds_box:
+                # pointing pairs
+                pointers = self.pointing_combos(inds)
+                for line, inds_pointer, num in pointers:
+                    self.erase(num, line, inds_pointer)
+                # box-line reduction
+                # keeps = self.box_line_reduction(inds)
+                # for inds_keep, nums in keeps:
+                #     self.erase(nums, inds, inds_keep)
