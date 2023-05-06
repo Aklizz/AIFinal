@@ -5,15 +5,20 @@ Group Assignment
 	2 Helina Teshome
 	3 Sena Adane
 	4 Yeabsira Kelil
+We added an amharic introductory to welcome the players using amharic-keyboard by installing the package and import it
+to run this on your pc you must install the package for amharic keyboard.
+
 """
 from typing import List, Tuple, Set
 from itertools import combinations
+import amharic_keyboard as ak
 
 SIZE = 9
 BOX_SIZE = 3
 
 
 class Sudoku():
+	print(ak.type("Suduko Game Yemisera game sihon Yeteserawm be debrhan university temariwoch le AI project new")
     def __init__(self, grid: List, is_X_Sudoku=False):
         n = len(grid)
         #assert len(grid[0]) == n, "Grid is not square. n_rows=%d, n_columns=%d" % (n, len(grid[0]))
